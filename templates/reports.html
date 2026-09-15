@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Reports — SpendWise AI{% endblock %}
+{% block page_title %}Reports{% endblock %}
+
+{% block content %}
+
+<div class="card" style="margin-bottom: 20px;">
+    <div class="section-heading">
+        <h3>Monthly Expense Report — {{ report.month_name }}</h3>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <form method="GET" action="{{ url_for('reports') }}" style="display:flex; gap:8px;">
+                <select name="month" onchange="this.form.submit()">
+                    {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {{ 'selected' if m == report.month }}>{{ ['', 'January','February','March','April','May','June','July','August','September','October','November','December'][m] }}</option>
+                    {% endfor %}
+                </select>
+                <select name="year" onchange="this.form.submit()">
+                    {% for y in range(current_year - 2, current_year + 1) %}
+                    <option value="{{ y }}" {{ 'selected' if y == report.year }}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            <a href="{{ url_for('download_report', month=report.month, year=report.year) }}" class="btn btn-primary btn-sm"><i data-lucide="download"></i>Download Report</a>
+        </div>
+    </div>
+
+    <div class="grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 4px;">
+        <div class="report-stat">
+            <div class="value">{{ report.total_spending | inr }}</div>
+            <div class="label">Total Spending</div>
+        </div>
+        <div class="report-stat">
+            <div class="value">{{ report.average_daily_spending | inr }}</div>
+            <div class="label">Avg Daily Spending</div>
+        </div>
+        <div class="report-stat">
+            <div class="value">{{ report.transaction_count }}</div>
+            <div class="label">Transactions</div>
+        </div>
+        <div class="report-stat">
+            <div class="value">{{ report.total_budget | inr }}</div>
+            <div class="label">Total Budget</div>
+        </div>
+    </div>
+</div>
+
+<div class="grid two-col" style="margin-bottom: 20px;">
+    <div class="card">
+        <div class="section-heading"><h3>Category Breakdown</h3></div>
+        {% if report.category_breakdown %}
+        {% set colors = ["#4F46E5", "#16A34A", "#F59E0B", "#EF4444", "#0EA5E9", "#DB2777", "#7C3AED", "#059669", "#CA8A04", "#0891B2"] %}
+        {% for c in report.category_breakdown %}
+        <div class="report-cat-row">
+            <span class="dot" style="background: {{ colors[loop.index0 % colors|length] }};"></span>
+            <span class="name">{{ c.category }}</span>
+            <span class="amt">{{ c.amount | inr }}</span>
+            <span class="pct">{{ c.percentage }}%</span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-muted" style="font-size:13px;">No expenses recorded for this period.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="section-heading"><h3>Budget Status</h3></div>
+        {% if report.budget_status %}
+        {% for b in report.budget_status %}
+        <div class="progress-row">
+            <div class="progress-top">
+                <span class="progress-cat">{{ b.category }}</span>
+                <span class="progress-figures">{{ b.spent | inr }} / {{ b.budget | inr }}</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill {{ b.status }}" style="width: {{ b.percentage }}%;"></div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-muted" style="font-size:13px;">No budgets configured for this period.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid two-col">
+    <div class="card">
+        <div class="section-heading"><h3>Highest Expense</h3></div>
+        {% if report.highest_expense %}
+        <div style="display:flex; align-items:center; gap: 14px;">
+            <div class="stat-icon tone-red"><i data-lucide="flame"></i></div>
+            <div>
+                <div style="font-weight:700; font-size:16px;">{{ report.highest_expense.amount | inr }}</div>
+                <div class="text-muted" style="font-size:12.5px;">{{ report.highest_expense.description }} &middot; {{ report.highest_expense.category }} &middot; {{ report.highest_expense.date }}</div>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-muted" style="font-size:13px;">No expenses recorded for this period.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="ai-header">
+            <div class="ai-badge"><i data-lucide="sparkles"></i></div>
+            <div><h3>AI Recommendations</h3><span>Savings opportunities for this period</span></div>
+        </div>
+        {% for r in recommendations %}
+        <div class="rec-item"><i data-lucide="lightbulb"></i><span>{{ r }}</span></div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}

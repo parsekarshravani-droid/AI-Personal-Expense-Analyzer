@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit Expense' if edit_mode else 'Add Expense' }} — SpendWise AI{% endblock %}
+{% block page_title %}{{ 'Edit Expense' if edit_mode else 'Add Expense' }}{% endblock %}
+
+{% block content %}
+
+<div class="card" style="max-width: 780px;">
+    <div class="section-heading">
+        <h3>{{ 'Edit Expense' if edit_mode else 'Add a New Expense' }}</h3>
+    </div>
+
+    <form method="POST" id="expenseForm">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="amount">Amount</label>
+                <div class="amount-input-wrap">
+                    <span>{{ currency_symbol }}</span>
+                    <input type="number" step="0.01" min="0.01" id="amount" name="amount" placeholder="0.00"
+                           value="{{ expense.amount if expense else '' }}" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="date">Date</label>
+                <input type="date" id="date" name="date"
+                       value="{{ expense.date.isoformat() if expense else today }}" required>
+            </div>
+
+            <div class="form-group full">
+                <label for="description">Description</label>
+                <input type="text" id="description" name="description" placeholder="e.g. Pizza from Domino's, Uber ride, Netflix subscription"
+                       value="{{ expense.description if expense else '' }}" required>
+                <div class="category-suggestion" id="categorySuggestion">
+                    <i data-lucide="sparkles"></i>
+                    <span>Suggested Category: <strong id="suggestedCategoryText"></strong></span>
+                    <button type="button" id="applySuggestion">Apply</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category</label>
+                <select id="category" name="category" required>
+                    <option value="" disabled {{ 'selected' if not expense }}>Select a category</option>
+                    {% for c in categories %}
+                    <option value="{{ c }}" {{ 'selected' if expense and expense.category == c }}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+                <div class="anomaly-banner" id="anomalyBanner">
+                    <i data-lucide="alert-triangle"></i>
+                    <span id="anomalyMessage"></span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="payment_method">Payment Method</label>
+                <select id="payment_method" name="payment_method" required>
+                    <option value="" disabled {{ 'selected' if not expense }}>Select payment method</option>
+                    {% for p in payment_methods %}
+                    <option value="{{ p }}" {{ 'selected' if expense and expense.payment_method == p }}>{{ p }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group full">
+                <label for="notes">Notes (optional)</label>
+                <textarea id="notes" name="notes" placeholder="Any additional details...">{{ expense.notes if expense else '' }}</textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary"><i data-lucide="check"></i>{{ 'Save Changes' if edit_mode else 'Add Expense' }}</button>
+                <a href="{{ url_for('expenses') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Provide today's date for the template (used when adding, not editing)
+    document.addEventListener("DOMContentLoaded", () => {
+        const dateInput = document.getElementById("date");
+        if (!dateInput.value) {
+            dateInput.value = new Date().toISOString().split("T")[0];
+        }
+    });
+</script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script>
+(function () {
+    const descriptionInput = document.getElementById("description");
+    const categorySelect = document.getElementById("category");
+    const suggestionBox = document.getElementById("categorySuggestion");
+    const suggestedText = document.getElementById("suggestedCategoryText");
+    const applyBtn = document.getElementById("applySuggestion");
+
+    const amountInput = document.getElementById("amount");
+    const anomalyBanner = document.getElementById("anomalyBanner");
+    const anomalyMessage = document.getElementById("anomalyMessage");
+
+    let debounceTimer;
+    let lastSuggestion = null;
+
+    descriptionInput.addEventListener("input", () => {
+        clearTimeout(debounceTimer);
+        const text = descriptionInput.value.trim();
+        if (text.length < 3) {
+            suggestionBox.classList.remove("show");
+            return;
+        }
+        debounceTimer = setTimeout(() => {
+            fetch(`/api/suggest-category?description=${encodeURIComponent(text)}`)
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.category && data.category !== "Other") {
+                        lastSuggestion = data.category;
+                        suggestedText.textContent = data.category;
+                        suggestionBox.classList.add("show");
+                    } else {
+                        suggestionBox.classList.remove("show");
+                    }
+                })
+                .catch(() => suggestionBox.classList.remove("show"));
+        }, 350);
+    });
+
+    applyBtn.addEventListener("click", () => {
+        if (lastSuggestion) {
+            categorySelect.value = lastSuggestion;
+            suggestionBox.classList.remove("show");
+            checkAnomaly();
+        }
+    });
+
+    function checkAnomaly() {
+        const amount = parseFloat(amountInput.value);
+        const category = categorySelect.value;
+        if (!amount || !category) {
+            anomalyBanner.classList.remove("show");
+            return;
+        }
+        fetch(`/api/check-anomaly?amount=${amount}&category=${encodeURIComponent(category)}`)
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.is_unusual) {
+                    anomalyMessage.textContent = data.message;
+                    anomalyBanner.classList.add("show");
+                } else {
+                    anomalyBanner.classList.remove("show");
+                }
+            })
+            .catch(() => anomalyBanner.classList.remove("show"));
+    }
+
+    amountInput.addEventListener("change", checkAnomaly);
+    categorySelect.addEventListener("change", checkAnomaly);
+})();
+</script>
+{% endblock %}

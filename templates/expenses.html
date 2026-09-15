@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}Expenses — SpendWise AI{% endblock %}
+{% block page_title %}Expenses{% endblock %}
+
+{% block content %}
+
+{% if import_mode %}
+<div class="card" style="margin-bottom: 20px;">
+    <div class="section-heading">
+        <h3>Import Expenses from CSV</h3>
+        <a href="{{ url_for('expenses') }}" class="muted-link">Back to Expenses</a>
+    </div>
+
+    {% if not import_preview %}
+        <form action="{{ url_for('import_csv') }}" method="POST" enctype="multipart/form-data">
+            <div class="upload-dropzone">
+                <i data-lucide="upload-cloud"></i>
+                <p><strong>Upload a CSV file</strong></p>
+                <p>Expected columns: date, amount, category, description, payment_method</p>
+                <input type="file" name="csv_file" accept=".csv" required>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary"><i data-lucide="eye"></i>Preview Import</button>
+            </div>
+        </form>
+    {% else %}
+        <p class="text-muted">File: <strong>{{ import_preview.filename }}</strong></p>
+        <div class="preview-stats">
+            <div class="preview-stat">
+                <div class="num" style="color: var(--green-600);">{{ import_preview.valid_count }}</div>
+                <div class="lbl">Valid Records</div>
+            </div>
+            <div class="preview-stat">
+                <div class="num" style="color: var(--red-600);">{{ import_preview.invalid_count }}</div>
+                <div class="lbl">Invalid Records</div>
+            </div>
+            <div class="preview-stat">
+                <div class="num">{{ import_preview.total_amount | inr }}</div>
+                <div class="lbl">Total Import Amount</div>
+            </div>
+        </div>
+
+        {% if import_preview.valid_rows %}
+        <div class="table-wrap" style="margin-bottom: 16px;">
+            <table class="data-table">
+                <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Payment</th><th>Amount</th></tr></thead>
+                <tbody>
+                    {% for row in import_preview.valid_rows[:10] %}
+                    <tr>
+                        <td>{{ row.date }}</td>
+                        <td><span class="badge badge-{{ row.category | lower }}">{{ row.category }}</span></td>
+                        <td>{{ row.description }}</td>
+                        <td>{{ row.payment_method }}</td>
+                        <td style="font-weight:700;">{{ row.amount | inr }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if import_preview.valid_count > 10 %}
+        <p class="text-muted" style="font-size:12.5px;">Showing first 10 of {{ import_preview.valid_count }} valid rows.</p>
+        {% endif %}
+        {% endif %}
+
+        {% if import_preview.invalid_rows %}
+        <p style="color: var(--red-600); font-weight:600; font-size: 13px; margin-top: 14px;">
+            {{ import_preview.invalid_count }} row(s) could not be imported:
+        </p>
+        <ul style="font-size:12.5px; color: var(--text-500); padding-left: 18px; margin-top: 6px;">
+            {% for row in import_preview.invalid_rows[:8] %}
+            <li>Row {{ row.row }}: {{ row.error }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if import_preview.valid_count > 0 %}
+        <form action="{{ url_for('import_csv') }}" method="POST" style="margin-top: 18px;">
+            <input type="hidden" name="confirm" value="1">
+            <input type="hidden" name="valid_rows_json" value='{{ import_preview.valid_rows_json }}'>
+            <div class="form-actions" style="margin-top:0;">
+                <a href="{{ url_for('import_csv') }}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary"><i data-lucide="check"></i>Confirm Import ({{ import_preview.valid_count }} records)</button>
+            </div>
+        </form>
+        {% endif %}
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="section-heading">
+        <h3>All Expenses</h3>
+        <div style="display:flex; gap:10px;">
+            <a href="{{ url_for('export_csv') }}" class="btn btn-secondary btn-sm"><i data-lucide="download"></i>Export CSV</a>
+            <a href="{{ url_for('import_csv') }}" class="btn btn-secondary btn-sm"><i data-lucide="upload"></i>Import CSV</a>
+            <a href="{{ url_for('add_expense') }}" class="btn btn-primary btn-sm"><i data-lucide="plus"></i>Add Expense</a>
+        </div>
+    </div>
+
+    <form class="filters-bar" method="GET" action="{{ url_for('expenses') }}">
+        <div class="search-box">
+            <i data-lucide="search"></i>
+            <input type="text" name="search" placeholder="Search description..." value="{{ filters.search }}">
+        </div>
+        <select name="category">
+            <option value="">All Categories</option>
+            {% for c in categories %}
+            <option value="{{ c }}" {{ 'selected' if filters.category == c }}>{{ c }}</option>
+            {% endfor %}
+        </select>
+        <select name="payment_method">
+            <option value="">All Payment Methods</option>
+            {% for p in payment_methods %}
+            <option value="{{ p }}" {{ 'selected' if filters.payment_method == p }}>{{ p }}</option>
+            {% endfor %}
+        </select>
+        <input type="date" name="date_from" value="{{ filters.date_from }}">
+        <input type="date" name="date_to" value="{{ filters.date_to }}">
+        <select name="sort_by">
+            <option value="date_desc" {{ 'selected' if filters.sort_by == 'date_desc' }}>Newest First</option>
+            <option value="date_asc" {{ 'selected' if filters.sort_by == 'date_asc' }}>Oldest First</option>
+            <option value="amount_desc" {{ 'selected' if filters.sort_by == 'amount_desc' }}>Amount: High to Low</option>
+            <option value="amount_asc" {{ 'selected' if filters.sort_by == 'amount_asc' }}>Amount: Low to High</option>
+        </select>
+        <button type="submit" class="btn btn-secondary btn-sm">Apply</button>
+        {% if filters.search or filters.category or filters.payment_method or filters.date_from or filters.date_to %}
+        <a href="{{ url_for('expenses') }}" class="btn btn-secondary btn-sm">Clear</a>
+        {% endif %}
+    </form>
+
+    {% if expenses %}
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr><th>Date</th><th>Category</th><th>Description</th><th>Payment Method</th><th>Amount</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                {% for e in expenses %}
+                <tr>
+                    <td>{{ e.date.strftime('%d %b %Y') }}</td>
+                    <td><span class="badge badge-{{ e.category | lower }}">{{ e.category }}</span></td>
+                    <td>{{ e.description }}{% if e.notes %}<br><span class="text-muted" style="font-size:11.5px;">{{ e.notes }}</span>{% endif %}</td>
+                    <td>{{ e.payment_method }}</td>
+                    <td style="font-weight:700;">{{ e.amount | inr }}</td>
+                    <td>
+                        <div class="row-actions">
+                            <a href="{{ url_for('edit_expense', expense_id=e.id) }}" class="icon-action" title="Edit"><i data-lucide="pencil"></i></a>
+                            <form action="{{ url_for('delete_expense', expense_id=e.id) }}" method="POST" onsubmit="return confirmDelete('Delete this expense? This cannot be undone.');">
+                                <button type="submit" class="icon-action danger" title="Delete"><i data-lucide="trash-2"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if pagination and pagination.pages > 1 %}
+    <div class="pagination">
+        <a href="{{ url_for('expenses', page=pagination.prev_num, **filters) if pagination.has_prev else '#' }}" class="{{ 'disabled' if not pagination.has_prev }}"><i data-lucide="chevron-left" style="width:15px;height:15px;"></i></a>
+        {% for p in pagination.iter_pages() %}
+            {% if p %}
+                <a href="{{ url_for('expenses', page=p, **filters) }}" class="{{ 'active' if p == pagination.page }}">{{ p }}</a>
+            {% else %}
+                <span>&hellip;</span>
+            {% endif %}
+        {% endfor %}
+        <a href="{{ url_for('expenses', page=pagination.next_num, **filters) if pagination.has_next else '#' }}" class="{{ 'disabled' if not pagination.has_next }}"><i data-lucide="chevron-right" style="width:15px;height:15px;"></i></a>
+    </div>
+    {% endif %}
+
+    {% elif not import_mode %}
+    <div class="empty-state">
+        <div class="empty-icon"><i data-lucide="receipt"></i></div>
+        <h3>No expenses yet</h3>
+        <p>Start tracking your spending to unlock personalized insights.</p>
+        <a href="{{ url_for('add_expense') }}" class="btn btn-primary"><i data-lucide="plus"></i>Add Expense</a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Budgets — SpendWise AI{% endblock %}
+{% block page_title %}Budgets{% endblock %}
+
+{% block content %}
+
+<div class="card" style="margin-bottom: 20px;">
+    <div class="section-heading">
+        <h3>Total Monthly Budget</h3>
+        <span class="text-muted" style="font-size:12px;">{{ current_year }}</span>
+    </div>
+
+    <div class="grid two-col">
+        <div>
+            {% set t = total_budget_progress %}
+            {% if t and t.budget > 0 %}
+            <div class="progress-row">
+                <div class="progress-top">
+                    <span class="progress-cat">{{ "Your Total Budget" if t.is_custom else "Combined Category Budgets" }}</span>
+                    <span class="progress-figures">{{ t.spent | inr }} / {{ t.budget | inr }}</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill {{ t.status }}" style="width: {{ t.percentage }}%;"></div>
+                </div>
+                {% if t.status == 'danger' %}
+                <div class="progress-alert danger-text"><i data-lucide="alert-triangle"></i>You have used {{ t.raw_percentage }}% of your total monthly budget.</div>
+                {% elif t.status == 'warning' %}
+                <div class="progress-alert"><i data-lucide="alert-circle"></i>You have used {{ t.raw_percentage }}% of your total monthly budget.</div>
+                {% else %}
+                <div class="progress-alert" style="color: var(--text-400); font-weight:500;">Remaining: {{ t.remaining | inr }}</div>
+                {% endif %}
+                {% if not t.is_custom %}
+                <p class="text-muted" style="font-size: 12px; margin-top: 10px;">No total budget set yet — this is the sum of your category budgets below. Set your own overall limit any time.</p>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon"><i data-lucide="wallet"></i></div>
+                <h3>No total budget set</h3>
+                <p>Set an overall monthly spending limit, independent of category budgets.</p>
+            </div>
+            {% endif %}
+
+            {% if t and t.is_custom %}
+            <form action="{{ url_for('delete_total_budget') }}" method="POST" onsubmit="return confirmDelete('Remove your total monthly budget?');" style="margin-top: 14px;">
+                <button type="submit" class="budget-remove-btn" title="Remove total budget" style="display:inline-flex; align-items:center; gap:6px; width:auto; padding:6px 12px;"><i data-lucide="x"></i>Remove total budget</button>
+            </form>
+            {% endif %}
+        </div>
+
+        <div>
+            <form method="POST" action="{{ url_for('budgets') }}">
+                <input type="hidden" name="form_type" value="total">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="total_amount">Your Monthly Budget</label>
+                    <div class="amount-input-wrap">
+                        <span>{{ currency_symbol }}</span>
+                        <input type="number" step="1" min="1" id="total_amount" name="total_amount"
+                               placeholder="e.g. 25000"
+                               value="{{ total_budget_progress.budget | int if total_budget_progress and total_budget_progress.is_custom else '' }}"
+                               required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i data-lucide="{{ 'edit-3' if total_budget_progress and total_budget_progress.is_custom else 'plus' }}"></i>
+                    {{ 'Update Total Budget' if total_budget_progress and total_budget_progress.is_custom else 'Set Total Budget' }}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="grid two-col">
+
+    <div class="card">
+        <div class="section-heading">
+            <h3>Category Budgets</h3>
+            <span class="text-muted" style="font-size:12px;">{{ current_year }}</span>
+        </div>
+
+        {% if progress %}
+            {% for b in progress %}
+            <div class="progress-row">
+                <div class="budget-card-row">
+                    <div style="flex:1;">
+                        <div class="progress-top">
+                            <span class="progress-cat">{{ b.category }}</span>
+                            <span class="progress-figures">{{ b.spent | inr }} / {{ b.budget | inr }}</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill {{ b.status }}" style="width: {{ b.percentage }}%;"></div>
+                        </div>
+                        {% if b.status == 'danger' %}
+                        <div class="progress-alert danger-text"><i data-lucide="alert-triangle"></i>You have used {{ b.raw_percentage }}% of your {{ b.category }} budget.</div>
+                        {% elif b.status == 'warning' %}
+                        <div class="progress-alert"><i data-lucide="alert-circle"></i>You have used {{ b.raw_percentage }}% of your {{ b.category }} budget.</div>
+                        {% else %}
+                        <div class="progress-alert" style="color: var(--text-400); font-weight:500;">Remaining: {{ b.remaining | inr }}</div>
+                        {% endif %}
+                    </div>
+                    <form action="{{ url_for('delete_budget', budget_id=b.id) }}" method="POST" onsubmit="return confirmDelete('Remove this budget?');" style="margin-left:14px;">
+                        <button type="submit" class="budget-remove-btn" title="Remove budget"><i data-lucide="x"></i></button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon"><i data-lucide="pie-chart"></i></div>
+            <h3>No budgets set yet</h3>
+            <p>Set monthly limits for your categories to track spending and get alerts.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card" style="align-self: start;">
+        <div class="section-heading"><h3>Set a Category Budget</h3></div>
+
+        {% if available_categories %}
+        <form method="POST" action="{{ url_for('budgets') }}">
+            <input type="hidden" name="form_type" value="category">
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label for="category">Category</label>
+                <select name="category" id="category" required>
+                    {% for c in available_categories %}
+                    <option value="{{ c }}">{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label for="amount">Monthly Budget Amount</label>
+                <div class="amount-input-wrap">
+                    <span>{{ currency_symbol }}</span>
+                    <input type="number" step="1" min="1" id="amount" name="amount" placeholder="e.g. 5000" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block"><i data-lucide="plus"></i>Set Budget</button>
+        </form>
+        {% else %}
+        <p class="text-muted" style="font-size: 13px;">You've set budgets for every category. Remove one to add a new limit.</p>
+        {% endif %}
+
+        <div style="margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border-soft);">
+            <h4 style="font-size: 13px; margin: 0 0 8px 0;">How budget status works</h4>
+            <div style="display:flex; flex-direction:column; gap: 8px; font-size: 12.3px; color: var(--text-500);">
+                <div style="display:flex; align-items:center; gap:8px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--green-500);display:inline-block;"></span>Below 70% used - on track</div>
+                <div style="display:flex; align-items:center; gap:8px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--orange-500);display:inline-block;"></span>70&ndash;90% used - approaching limit</div>
+                <div style="display:flex; align-items:center; gap:8px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--red-500);display:inline-block;"></span>Above 90% used - over limit soon</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

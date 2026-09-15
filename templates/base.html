@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SpendWise AI{% endblock %}</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+    <!-- App styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    {% if error_message %}
+        <div class="error-page">
+            <div class="error-card">
+                <i data-lucide="alert-circle"></i>
+                <h1>{{ error_message }}</h1>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Go to Dashboard</a>
+            </div>
+        </div>
+    {% else %}
+
+    <div class="app-shell">
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-mark">
+                    <i data-lucide="wallet"></i>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-name">MoneyLenz</span>
+                    <span class="brand-tag">AI Personal Expense Analyzer</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('dashboard') }}" class="nav-item {{ 'active' if active_page == 'dashboard' }}">
+                    <i data-lucide="layout-dashboard"></i><span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('expenses') }}" class="nav-item {{ 'active' if active_page == 'expenses' }}">
+                    <i data-lucide="receipt"></i><span>Expenses</span>
+                </a>
+                <a href="{{ url_for('add_expense') }}" class="nav-item {{ 'active' if active_page == 'add_expense' }}">
+                    <i data-lucide="circle-plus"></i><span>Add Expense</span>
+                </a>
+                <a href="{{ url_for('analytics') }}" class="nav-item {{ 'active' if active_page == 'analytics' }}">
+                    <i data-lucide="bar-chart-3"></i><span>Analytics</span>
+                </a>
+                <a href="{{ url_for('budgets') }}" class="nav-item {{ 'active' if active_page == 'budgets' }}">
+                    <i data-lucide="pie-chart"></i><span>Budgets</span>
+                </a>
+                <a href="{{ url_for('reports') }}" class="nav-item {{ 'active' if active_page == 'reports' }}">
+                    <i data-lucide="file-text"></i><span>Reports</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="{{ url_for('settings') }}" class="nav-item {{ 'active' if active_page == 'settings' }}" id="settings-link">
+                    <i data-lucide="settings"></i><span>Settings</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Mobile overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- Main content -->
+        <div class="main-area">
+
+            <!-- Top bar -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                </div>
+
+                <div class="topbar-right">
+                    <div class="topbar-search">
+                        <i data-lucide="search"></i>
+                        <input type="text" placeholder="Search expenses..." id="globalSearch">
+                    </div>
+                    <div class="notif-wrap" id="notifWrap">
+                        <button class="icon-btn" aria-label="Notifications" id="notifBtn">
+                            <i data-lucide="bell"></i>
+                            <span class="notif-dot" id="notifDot" hidden></span>
+                        </button>
+                        <div class="notif-dropdown" id="notifDropdown" hidden>
+                            <div class="notif-dropdown-header">
+                                <h4>Notifications</h4>
+                            </div>
+                            <div class="notif-list" id="notifList">
+                                <div class="notif-empty">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="user-chip">
+                        <div class="user-avatar">SP</div>
+                        <div class="user-meta">
+                            <span class="user-name">Shravani Parsekar</span>
+                            <span class="user-role">Personal Account</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Flash messages -->
+            <div class="toast-container" id="toastContainer">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="toast toast-{{ category }}" data-autohide="6000">
+                                <i data-lucide="{{ 'check-circle' if category == 'success' else ('alert-triangle' if category == 'warning' else 'x-circle') }}"></i>
+                                <span>{{ message }}</span>
+                                <button class="toast-close" aria-label="Dismiss">&times;</button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            <!-- Page content -->
+            <main class="page-content">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    {% endif %}
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

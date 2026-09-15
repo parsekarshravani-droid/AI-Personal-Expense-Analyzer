@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Settings — SpendWise AI{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+
+<div class="grid two-col">
+
+    <div>
+        <!-- General -->
+        <div class="card settings-section">
+            <div class="section-heading"><h3>General</h3></div>
+            <form method="POST" action="{{ url_for('settings') }}">
+                <input type="hidden" name="action" value="update_general">
+                <div class="form-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label for="currency_symbol">Currency Symbol</label>
+                        <select name="currency_symbol" id="currency_symbol">
+                            {% for sym, label in [('₹', 'INR — ₹'), ('$', 'USD — $'), ('€', 'EUR — €'), ('£', 'GBP — £'), ('¥', 'JPY — ¥')] %}
+                            <option value="{{ sym }}" {{ 'selected' if settings.currency_symbol == sym }}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="budget_alert_threshold">Budget Alert Threshold (%)</label>
+                        <input type="number" min="1" max="100" name="budget_alert_threshold" id="budget_alert_threshold" value="{{ settings.budget_alert_threshold }}">
+                    </div>
+                </div>
+                <p class="settings-row-desc" style="margin-bottom:14px;">You'll get an alert (dashboard insight + notification bell) once a category's spending crosses this percentage of its budget.</p>
+                <button type="submit" class="btn btn-primary"><i data-lucide="check"></i>Save General Settings</button>
+            </form>
+        </div>
+
+        <!-- Categories -->
+        <div class="card settings-section">
+            <div class="section-heading"><h3>Expense Categories</h3></div>
+            <div class="chip-list">
+                {% for c in categories %}
+                <span class="chip">
+                    {{ c }}
+                    <form action="{{ url_for('settings') }}" method="POST" onsubmit="return confirmDelete('Remove category \'{{ c }}\'?');">
+                        <input type="hidden" name="action" value="delete_category">
+                        <input type="hidden" name="category" value="{{ c }}">
+                        <button type="submit" class="chip-remove-btn" title="Remove"><i data-lucide="x"></i></button>
+                    </form>
+                </span>
+                {% endfor %}
+            </div>
+            <form method="POST" action="{{ url_for('settings') }}" class="inline-add-form">
+                <input type="hidden" name="action" value="add_category">
+                <input type="text" name="new_category" placeholder="New category name" required>
+                <button type="submit" class="btn btn-secondary"><i data-lucide="plus"></i>Add</button>
+            </form>
+            <p class="settings-row-desc" style="margin-top:10px;">A category in use by an existing expense or budget can't be removed.</p>
+        </div>
+
+        <!-- Payment methods -->
+        <div class="card settings-section">
+            <div class="section-heading"><h3>Payment Methods</h3></div>
+            <div class="chip-list">
+                {% for p in payment_methods %}
+                <span class="chip">
+                    {{ p }}
+                    <form action="{{ url_for('settings') }}" method="POST" onsubmit="return confirmDelete('Remove payment method \'{{ p }}\'?');">
+                        <input type="hidden" name="action" value="delete_payment_method">
+                        <input type="hidden" name="payment_method" value="{{ p }}">
+                        <button type="submit" class="chip-remove-btn" title="Remove"><i data-lucide="x"></i></button>
+                    </form>
+                </span>
+                {% endfor %}
+            </div>
+            <form method="POST" action="{{ url_for('settings') }}" class="inline-add-form">
+                <input type="hidden" name="action" value="add_payment_method">
+                <input type="text" name="new_payment_method" placeholder="New payment method" required>
+                <button type="submit" class="btn btn-secondary"><i data-lucide="plus"></i>Add</button>
+            </form>
+            <p class="settings-row-desc" style="margin-top:10px;">A payment method in use by an existing expense can't be removed.</p>
+        </div>
+    </div>
+
+    <div>
+        <!-- AI Insights -->
+        <div class="card settings-section">
+            <div class="section-heading"><h3>AI Insights</h3></div>
+            <div class="settings-row">
+                <div>
+                    <div class="settings-row-label">Insights engine</div>
+                    <div class="settings-row-desc">Insights and recommendations are always computed locally from your real data.</div>
+                </div>
+                {% if ai_configured %}
+                <span class="ai-status-badge on"><i data-lucide="check-circle"></i>AI-enhanced</span>
+                {% else %}
+                <span class="ai-status-badge off"><i data-lucide="cpu"></i>Rule-based</span>
+                {% endif %}
+            </div>
+
+            <form method="POST" action="{{ url_for('settings') }}" style="margin-top: 14px;">
+                <input type="hidden" name="action" value="update_ai_key">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label for="ai_api_key">External AI API Key (optional)</label>
+                    <input type="password" name="ai_api_key" id="ai_api_key" placeholder="{{ 'Key is set — leave as-is to keep it' if ai_configured else 'e.g. sk-...' }}" autocomplete="off">
+                </div>
+                <p class="settings-row-desc" style="margin-bottom:14px;">Adding a key layers natural-language phrasing on top of the same locally-computed findings. Leave blank and save to clear it — the app works fully without one.</p>
+                <button type="submit" class="btn btn-secondary btn-block"><i data-lucide="key"></i>Save AI Key</button>
+            </form>
+        </div>
+
+        <!-- Danger zone -->
+        <div class="card settings-section">
+            <div class="section-heading"><h3>Danger Zone</h3></div>
+            <div class="danger-zone">
+                <h4>Reset all data</h4>
+                <p>Permanently deletes every expense and budget, then restores the original demo data. This can't be undone.</p>
+                <form method="POST" action="{{ url_for('settings') }}" onsubmit="return confirmDelete('This will permanently delete all your expenses and budgets and restore demo data. Continue?');">
+                    <input type="hidden" name="action" value="reset_data">
+                    <button type="submit" class="btn btn-danger-outline"><i data-lucide="trash-2"></i>Reset All Data</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
