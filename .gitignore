@@ -1,6 +1,11 @@
-__pycache__/ 
-*.pyc 
-.env 
-database/*.db 
-uploads/* 
-!uploads/.gitkeep 
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+database/*.db
+database/*.sqlite
+uploads/*
+!uploads/.gitkeep
+.vscode/
+.idea/
