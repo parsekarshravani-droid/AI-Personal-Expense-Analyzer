@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function baseTooltipOptions() {
     return {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
             legend: { display: false },
             tooltip: { callbacks: { label: (item) => ` ${formatINR(item.raw)}` } },
@@ -84,6 +85,7 @@ function renderCategoryPie(dist) {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: { position: "bottom", labels: { boxWidth: 10, padding: 12, font: { size: 11 } } },
                 tooltip: {
@@ -114,6 +116,7 @@ function renderPaymentDoughnut(dist) {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             cutout: "62%",
             plugins: {
                 legend: { position: "bottom", labels: { boxWidth: 10, padding: 12, font: { size: 11 } } },
