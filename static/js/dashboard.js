@@ -67,6 +67,7 @@ function renderCategoryDoughnut(dist) {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             cutout: "68%",
             plugins: {
                 legend: { position: "bottom", labels: { boxWidth: 10, padding: 14, font: { size: 11.5 } } },
@@ -108,6 +109,7 @@ function renderDailySpending(daily) {
 function chartOptions(tooltipLabelFn) {
     return {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
             legend: { display: false },
             tooltip: {
@@ -135,3 +137,4 @@ function drawEmptyCanvasMessage(canvas, message) {
     ctx.textAlign = "center";
     ctx.fillText(message, canvas.width / 2, canvas.height / 2);
 }
+
