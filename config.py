@@ -18,11 +18,23 @@ class Config:
     """Central configuration for the Flask application."""
 
     # Flask
-    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
+    SECRET_KEY = os.environ.get(
+        "SECRET_KEY",
+        "dev-secret-key-change-in-production"
+    )
     DEBUG = os.environ.get("FLASK_DEBUG", "True") == "True"
 
     # Database
-    DATABASE_PATH = os.path.join(BASE_DIR, "database", "expense.db")
+    # Render Persistent Disk:
+    # DATABASE_PATH=/var/data/expense.db
+    #
+    # Local development:
+    # database/expense.db
+    DATABASE_PATH = os.environ.get(
+        "DATABASE_PATH",
+        os.path.join(BASE_DIR, "database", "expense.db")
+    )
+
     SQLALCHEMY_DATABASE_URI = f"sqlite:///{DATABASE_PATH}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
