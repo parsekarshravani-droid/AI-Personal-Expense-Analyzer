@@ -1,4 +1,4 @@
-# SpendWise AI — Personal Expense Analyzer
+# MoneyLenz AI — Personal Expense Analyzer
 
 A modern, fintech-style personal expense tracker with AI-powered (rule-based)
 financial insights, budget tracking, analytics, and CSV import/export.
